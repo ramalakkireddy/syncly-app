@@ -1,5 +1,4 @@
-
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { PlusIcon, FolderIcon } from '@heroicons/react/24/outline'
 import { useProjectStore } from '../stores/projectStore'
@@ -8,13 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Badge } from '../components/ui/badge'
 import { format } from 'date-fns'
 
-export const DashboardPage = () => {
+export const ProjectsPage = () => {
   const { projects, loading, fetchProjects } = useProjectStore()
-  const [teamId] = useState('c5fac37b-1e77-47b3-afee-32e78c9b9b2d') // Demo team ID from database
 
   useEffect(() => {
-    fetchProjects(teamId)
-  }, [fetchProjects, teamId])
+    fetchProjects('c5fac37b-1e77-47b3-afee-32e78c9b9b2d') // Demo team ID
+  }, [fetchProjects])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -35,7 +33,7 @@ export const DashboardPage = () => {
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-64 mb-6"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
+            {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="h-48 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
             ))}
           </div>
@@ -49,10 +47,10 @@ export const DashboardPage = () => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Dashboard
+            All Projects
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Welcome back! Here's what's happening with your projects.
+            Manage and view all your projects.
           </p>
         </div>
         <Link to="/projects/new">
@@ -85,16 +83,16 @@ export const DashboardPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((project) => (
             <Link key={project.id} to={`/project/${project.id}`}>
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{project.title}</CardTitle>
+                    <CardTitle className="text-lg truncate">{project.title}</CardTitle>
                     <Badge className={getStatusColor(project.status)}>
                       {project.status}
                     </Badge>
                   </div>
-                  <CardDescription className="line-clamp-2">
-                    {project.description}
+                  <CardDescription className="line-clamp-2 min-h-[2.5rem]">
+                    {project.description || 'No description provided.'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

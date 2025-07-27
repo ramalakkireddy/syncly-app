@@ -49,7 +49,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     }
   },
 
-  createProject: async (project) => {
+  createProject: async (project: ProjectInsert) => {
     try {
       const { data, error } = await (supabase as any)
         .from('projects')
@@ -68,7 +68,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     }
   },
 
-  updateProject: async (id, updates) => {
+  updateProject: async (id: string, updates: ProjectUpdate) => {
     try {
       const { data, error } = await (supabase as any)
         .from('projects')
@@ -88,7 +88,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     }
   },
 
-  deleteProject: async (id) => {
+  deleteProject: async (id: string) => {
     try {
       const { error } = await (supabase as any)
         .from('projects')

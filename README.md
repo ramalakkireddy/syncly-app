@@ -1,73 +1,119 @@
-# Welcome to your Lovable project
 
-## Project info
+# ProjectSync - Modern Project Management SaaS
 
-**URL**: https://lovable.dev/projects/20b46221-efaa-4a01-a76b-4204bee2040c
+A production-ready, full-stack project management and collaboration tool built with React, TypeScript, Tailwind CSS, and Supabase.
 
-## How can I edit this code?
+## 🚀 Features
 
-There are several ways of editing your application.
+### ✅ Authentication & Security
+- Email/password authentication via Supabase
+- Secure session management
+- Protected routes and layouts
+- Row Level Security (RLS) for data access
 
-**Use Lovable**
+### 🎨 Modern UI/UX
+- Beautiful, responsive design inspired by Linear and Notion
+- Dark/Light mode toggle with system preference detection
+- Smooth animations and transitions
+- Mobile-first responsive layout
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/20b46221-efaa-4a01-a76b-4204bee2040c) and start prompting.
+### 👥 Team Management
+- Create and manage teams
+- Invite team members by email
+- Role-based access control (Owner, Admin, Member)
+- Team-scoped project visibility
 
-Changes made via Lovable will be committed automatically to this repo.
+### 📁 Project Management
+- Create, edit, and delete projects
+- Project status tracking (Active, Completed, Archived)
+- Tagging system for organization
+- Project filtering and search
 
-**Use your preferred IDE**
+### 📝 Task Management
+- Task creation with rich details
+- Due dates and priority levels
+- Task assignment to team members
+- Status tracking (To Do, In Progress, Done)
+- Real-time updates via Supabase
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 🔄 Real-time Features
+- Live updates for project and task changes
+- Collaborative editing
+- Real-time notifications
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🛠️ Tech Stack
 
-Follow these steps:
+- **Frontend**: React 18 + TypeScript + Vite
+- **Styling**: Tailwind CSS + HeadlessUI
+- **State Management**: Zustand
+- **Backend**: Supabase (PostgreSQL, Auth, Realtime)
+- **UI Components**: Radix UI + Custom components
+- **Icons**: Heroicons
+- **Notifications**: React Hot Toast
+- **Date Handling**: date-fns
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 🏗️ Database Schema
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Tables
+- `teams` - Team information and ownership
+- `team_members` - Team membership with roles
+- `projects` - Project details and metadata
+- `tasks` - Task management with assignments
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Security
+- Row Level Security (RLS) policies
+- User-based data access control
+- Secure API endpoints
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+## 🚀 Getting Started
+
+1. **Clone the repository**
+```bash
+git clone <your-repo-url>
+cd projectsync
+```
+
+2. **Install dependencies**
+```bash
+npm install
+```
+
+3. **Set up environment variables**
+Create a `.env.local` file:
+```
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+4. **Run the development server**
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+5. **Set up Supabase**
+   - Create a new Supabase project
+   - Run the SQL migrations for tables
+   - Configure RLS policies
+   - Enable real-time subscriptions
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 📦 Deployment
 
-**Use GitHub Codespaces**
+The app is ready for deployment on Vercel:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```bash
+npm run build
+```
 
-## What technologies are used for this project?
+Deploy to Vercel with automatic builds from your Git repository.
 
-This project is built with:
+## 🤝 Contributing
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-## How can I deploy this project?
+## 📝 License
 
-Simply open [Lovable](https://lovable.dev/projects/20b46221-efaa-4a01-a76b-4204bee2040c) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+This project is licensed under the MIT License.

@@ -1,24 +1,18 @@
 
 import { create } from 'zustand'
 import { supabase } from '../integrations/supabase/client'
+import type { Tables, TablesInsert, TablesUpdate } from '../integrations/supabase/types'
 
-interface Project {
-  id: string
-  team_id: string
-  title: string
-  description: string | null
-  status: string
-  tags: string[]
-  created_at: string
-  updated_at: string
-}
+type Project = Tables<'projects'>
+type ProjectInsert = TablesInsert<'projects'>
+type ProjectUpdate = TablesUpdate<'projects'>
 
 interface ProjectState {
   projects: Project[]
   loading: boolean
   fetchProjects: (teamId: string) => Promise<void>
-  createProject: (project: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => Promise<void>
-  updateProject: (id: string, updates: Partial<Pick<Project, 'title' | 'description' | 'status' | 'tags'>>) => Promise<void>
+  createProject: (project: Omit<ProjectInsert, 'id' | 'created_at' | 'updated_at'>) => Promise<void>
+  updateProject: (id: string, updates: Omit<ProjectUpdate, 'id' | 'created_at' | 'updated_at'>) => Promise<void>
   deleteProject: (id: string) => Promise<void>
 }
 

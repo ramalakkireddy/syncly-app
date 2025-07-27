@@ -1,18 +1,27 @@
 
 import { create } from 'zustand'
 import { supabase } from '../integrations/supabase/client'
-import type { Tables, TablesInsert, TablesUpdate } from '../integrations/supabase/types'
 
-type Project = Tables<'projects'>
-type ProjectInsert = TablesInsert<'projects'>
-type ProjectUpdate = TablesUpdate<'projects'>
+interface Project {
+  id: string
+  team_id: string
+  title: string
+  description: string | null
+  status: string
+  tags: string[]
+  created_at: string
+  updated_at: string
+}
+
+type ProjectInsert = Omit<Project, 'id' | 'created_at' | 'updated_at'>
+type ProjectUpdate = Partial<Omit<Project, 'id' | 'created_at' | 'updated_at'>>
 
 interface ProjectState {
   projects: Project[]
   loading: boolean
   fetchProjects: (teamId: string) => Promise<void>
-  createProject: (project: Omit<ProjectInsert, 'id' | 'created_at' | 'updated_at'>) => Promise<void>
-  updateProject: (id: string, updates: Omit<ProjectUpdate, 'id' | 'created_at' | 'updated_at'>) => Promise<void>
+  createProject: (project: ProjectInsert) => Promise<void>
+  updateProject: (id: string, updates: ProjectUpdate) => Promise<void>
   deleteProject: (id: string) => Promise<void>
 }
 
@@ -24,7 +33,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     set({ loading: true })
     
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('projects')
         .select('*')
         .eq('team_id', teamId)
@@ -42,7 +51,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   createProject: async (project) => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('projects')
         .insert([project])
         .select()
@@ -61,7 +70,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   updateProject: async (id, updates) => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('projects')
         .update({ ...updates, updated_at: new Date().toISOString() })
         .eq('id', id)
@@ -81,7 +90,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   deleteProject: async (id) => {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('projects')
         .delete()
         .eq('id', id)

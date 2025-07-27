@@ -4,7 +4,7 @@ import { Layout } from './components/Layout'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { DashboardPage } from './pages/DashboardPage'
-import { NotFound } from './pages/NotFound'
+import NotFound from './pages/NotFound'
 
 const App = () => {
   return (

@@ -1,14 +1,16 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { PlusIcon, FolderIcon } from '@heroicons/react/24/outline'
+import { PlusIcon, FolderIcon, PencilIcon } from '@heroicons/react/24/outline'
 import { useProjectStore } from '../stores/projectStore'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
+import { EditProjectModal } from '../components/EditProjectModal'
 import { format } from 'date-fns'
 
 export const ProjectsPage = () => {
   const { projects, loading, fetchProjects } = useProjectStore()
+  const [editingProject, setEditingProject] = useState<any>(null)
 
   useEffect(() => {
     fetchProjects('c5fac37b-1e77-47b3-afee-32e78c9b9b2d') // Demo team ID
@@ -82,20 +84,38 @@ export const ProjectsPage = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((project) => (
-            <Link key={project.id} to={`/project/${project.id}`}>
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg truncate">{project.title}</CardTitle>
+            <Card key={project.id} className="hover:shadow-lg transition-shadow h-full">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <Link to={`/project/${project.id}`} className="flex-1">
+                    <CardTitle className="text-lg truncate hover:text-primary">
+                      {project.title}
+                    </CardTitle>
+                  </Link>
+                  <div className="flex items-center gap-2">
                     <Badge className={getStatusColor(project.status)}>
                       {project.status}
                     </Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        setEditingProject(project)
+                      }}
+                    >
+                      <PencilIcon className="h-3 w-3" />
+                    </Button>
                   </div>
-                  <CardDescription className="line-clamp-2 min-h-[2.5rem]">
+                </div>
+                <Link to={`/project/${project.id}`}>
+                  <CardDescription className="line-clamp-2 min-h-[2.5rem] hover:text-foreground">
                     {project.description || 'No description provided.'}
                   </CardDescription>
-                </CardHeader>
-                <CardContent>
+                </Link>
+              </CardHeader>
+              <CardContent>
+                <Link to={`/project/${project.id}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex flex-wrap gap-1">
                       {project.tags.slice(0, 2).map((tag) => (
@@ -113,11 +133,19 @@ export const ProjectsPage = () => {
                       {format(new Date(project.created_at), 'MMM d, yyyy')}
                     </span>
                   </div>
-                </CardContent>
-              </Card>
-            </Link>
+                </Link>
+              </CardContent>
+            </Card>
           ))}
         </div>
+      )}
+
+      {editingProject && (
+        <EditProjectModal
+          project={editingProject}
+          isOpen={!!editingProject}
+          onClose={() => setEditingProject(null)}
+        />
       )}
     </div>
   )

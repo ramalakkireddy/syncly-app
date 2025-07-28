@@ -1,9 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useProjectStore } from '../stores/projectStore'
+import { useTaskStore } from '../stores/taskStore'
+import { useMessageStore } from '../stores/messageStore'
+import { useUserStore } from '../stores/userStore'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
+import { EditProjectModal } from '../components/EditProjectModal'
+import { TaskSection } from '../components/TaskSection'
+import { ChatSection } from '../components/ChatSection'
 import { format } from 'date-fns'
 import { ArrowLeftIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { toast } from 'react-hot-toast'
@@ -12,7 +19,11 @@ export const ProjectDetailPage = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { projects, fetchProjects, deleteProject } = useProjectStore()
+  const { fetchTasks } = useTaskStore()
+  const { fetchMessages } = useMessageStore()
+  const { fetchUsers } = useUserStore()
   const [loading, setLoading] = useState(false)
+  const [editingProject, setEditingProject] = useState(false)
   
   const project = projects.find(p => p.id === id)
 
@@ -21,7 +32,12 @@ export const ProjectDetailPage = () => {
       // Fetch projects to find the specific project
       fetchProjects('c5fac37b-1e77-47b3-afee-32e78c9b9b2d')
     }
-  }, [project, fetchProjects])
+    if (id) {
+      fetchTasks(id)
+      fetchMessages(id)
+      fetchUsers()
+    }
+  }, [project, fetchProjects, fetchTasks, fetchMessages, fetchUsers, id])
 
   const handleDelete = async () => {
     if (!project || !window.confirm('Are you sure you want to delete this project?')) {
@@ -95,7 +111,7 @@ export const ProjectDetailPage = () => {
           <Badge className={getStatusColor(project.status)}>
             {project.status}
           </Badge>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setEditingProject(true)}>
             <PencilIcon className="h-4 w-4 mr-2" />
             Edit
           </Button>
@@ -106,81 +122,107 @@ export const ProjectDetailPage = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Description</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {project.description ? (
-                <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                  {project.description}
-                </p>
-              ) : (
-                <p className="text-gray-500 dark:text-gray-400 italic">
-                  No description provided.
-                </p>
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="tasks">Tasks</TabsTrigger>
+          <TabsTrigger value="chat">Chat</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Description</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {project.description ? (
+                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                      {project.description}
+                    </p>
+                  ) : (
+                    <p className="text-gray-500 dark:text-gray-400 italic">
+                      No description provided.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Project Info</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Status
+                    </Label>
+                    <div className="mt-1">
+                      <Badge className={getStatusColor(project.status)}>
+                        {project.status}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Created
+                    </Label>
+                    <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                      {format(new Date(project.created_at), 'PPP')}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Last Updated
+                    </Label>
+                    <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                      {format(new Date(project.updated_at), 'PPP')}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {project.tags.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Tags</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      {project.tags.map((tag) => (
+                        <Badge key={tag} variant="outline">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               )}
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="tasks">
+          <TaskSection projectId={project.id} />
+        </TabsContent>
+        
+        <TabsContent value="chat">
+          <ChatSection projectId={project.id} />
+        </TabsContent>
+      </Tabs>
 
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Project Info</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  Status
-                </Label>
-                <div className="mt-1">
-                  <Badge className={getStatusColor(project.status)}>
-                    {project.status}
-                  </Badge>
-                </div>
-              </div>
-              
-              <div>
-                <Label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  Created
-                </Label>
-                <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                  {format(new Date(project.created_at), 'PPP')}
-                </p>
-              </div>
-              
-              <div>
-                <Label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  Last Updated
-                </Label>
-                <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                  {format(new Date(project.updated_at), 'PPP')}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {project.tags.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Tags</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {project.tags.map((tag) => (
-                    <Badge key={tag} variant="outline">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </div>
+      {editingProject && (
+        <EditProjectModal
+          project={project}
+          isOpen={editingProject}
+          onClose={() => setEditingProject(false)}
+        />
+      )}
     </div>
   )
 }

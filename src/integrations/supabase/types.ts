@@ -51,14 +51,46 @@ export type Database = {
             foreignKeyName: "messages_receiver_id_fkey"
             columns: ["receiver_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "user_details"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "messages_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "user_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          phone: string | null
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          phone?: string | null
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "user_details"
             referencedColumns: ["id"]
           },
         ]
@@ -143,7 +175,7 @@ export type Database = {
             foreignKeyName: "tasks_assigned_to_fkey"
             columns: ["assigned_to"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "user_details"
             referencedColumns: ["id"]
           },
           {
@@ -207,7 +239,7 @@ export type Database = {
             foreignKeyName: "user_projects_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "user_details"
             referencedColumns: ["id"]
           },
         ]
@@ -235,7 +267,17 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      user_details: {
+        Row: {
+          email: string | null
+          id: string | null
+          joined_at: string | null
+          phone: string | null
+          updated_at: string | null
+          username: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never

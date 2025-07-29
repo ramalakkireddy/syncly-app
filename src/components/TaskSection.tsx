@@ -46,7 +46,7 @@ export const TaskSection = ({ projectId }: TaskSectionProps) => {
     title: '',
     description: '',
     status: 'Not Started',
-    assigned_to: '',
+    assigned_to: 'unassigned',
     due_date: ''
   })
 
@@ -59,7 +59,7 @@ export const TaskSection = ({ projectId }: TaskSectionProps) => {
           title: formData.title,
           description: formData.description || null,
           status: formData.status,
-          assigned_to: formData.assigned_to || null,
+          assigned_to: formData.assigned_to === 'unassigned' ? null : formData.assigned_to || null,
           due_date: formData.due_date || null
         })
         toast.success('Task updated successfully!')
@@ -70,7 +70,7 @@ export const TaskSection = ({ projectId }: TaskSectionProps) => {
           title: formData.title,
           description: formData.description || null,
           status: formData.status,
-          assigned_to: formData.assigned_to || null,
+          assigned_to: formData.assigned_to === 'unassigned' ? null : formData.assigned_to || null,
           due_date: formData.due_date || null
         })
         toast.success('Task created successfully!')
@@ -81,7 +81,7 @@ export const TaskSection = ({ projectId }: TaskSectionProps) => {
         title: '',
         description: '',
         status: 'Not Started',
-        assigned_to: '',
+        assigned_to: 'unassigned',
         due_date: ''
       })
     } catch (error) {
@@ -96,7 +96,7 @@ export const TaskSection = ({ projectId }: TaskSectionProps) => {
       title: task.title,
       description: task.description || '',
       status: task.status,
-      assigned_to: task.assigned_to || '',
+      assigned_to: task.assigned_to || 'unassigned',
       due_date: task.due_date || ''
     })
   }
@@ -191,7 +191,7 @@ export const TaskSection = ({ projectId }: TaskSectionProps) => {
                       <SelectValue placeholder="Select user" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Unassigned</SelectItem>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
                       {users.map((user) => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.name}
@@ -332,7 +332,7 @@ export const TaskSection = ({ projectId }: TaskSectionProps) => {
                       <SelectValue placeholder="Select user" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Unassigned</SelectItem>
+<SelectItem value="unassigned">Unassigned</SelectItem>
                       {users.map((user) => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.name}

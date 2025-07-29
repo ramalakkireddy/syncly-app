@@ -2,27 +2,50 @@ import { useEffect, useState } from 'react'
 import { UsersIcon } from '@heroicons/react/24/outline'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Avatar, AvatarFallback } from '../components/ui/avatar'
+import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
+import { Label } from '../components/ui/label'
+import { Badge } from '../components/ui/badge'
 import { useUserStore } from '../stores/userStore'
 import { useProjectStore } from '../stores/projectStore'
+import { useTaskStore } from '../stores/taskStore'
+import { useAuthStore } from '../stores/authStore'
 import { format } from 'date-fns'
+import { toast } from 'react-hot-toast'
+import { supabase } from '../integrations/supabase/client'
 
 export const TeamPage = () => {
   const { users, loading: usersLoading, fetchUsers } = useUserStore()
   const { projects, loading: projectsLoading, fetchProjects } = useProjectStore()
+  const { tasks, fetchAllTasks } = useTaskStore()
+  const { user: currentUser } = useAuthStore()
+  const [editingUser, setEditingUser] = useState<string | null>(null)
+  const [profileData, setProfileData] = useState<{ [key: string]: { username: string; phone: string } }>({})
 
   useEffect(() => {
     fetchUsers()
     fetchProjects('c5fac37b-1e77-47b3-afee-32e78c9b9b2d') // Demo team ID
-  }, [fetchUsers, fetchProjects])
+    fetchAllTasks()
+  }, [fetchUsers, fetchProjects, fetchAllTasks])
 
-  const getUserProjectStats = (userId: string) => {
-    // For demo purposes, return random stats
-    // In real app, you'd query user_projects table
-    const activeProjects = Math.floor(Math.random() * 5)
-    const completedProjects = Math.floor(Math.random() * 3)
-    return { activeProjects, completedProjects }
+  const getUserTaskStats = (userId: string) => {
+    const userTasks = tasks.filter(task => task.assigned_to === userId)
+    const activeTasks = userTasks.filter(task => !['Completed'].includes(task.status))
+    const completedTasks = userTasks.filter(task => task.status === 'Completed')
+    return { activeTasks: activeTasks.length, completedTasks: completedTasks.length }
   }
 
+  const getUserProjectStats = (userId: string) => {
+    // Count projects where user has tasks assigned
+    const userProjectIds = [...new Set(tasks.filter(task => task.assigned_to === userId).map(task => task.project_id))]
+    const activeProjects = userProjectIds.filter(projectId => 
+      projects.find(p => p.id === projectId)?.status === 'Active'
+    ).length
+    const completedProjects = userProjectIds.filter(projectId => 
+      projects.find(p => p.id === projectId)?.status === 'Completed'
+    ).length
+    return { activeProjects, completedProjects }
+  }
 
   const getInitials = (name: string) => {
     return name
@@ -31,6 +54,45 @@ export const TeamPage = () => {
       .join('')
       .toUpperCase()
       .slice(0, 2)
+  }
+
+  const handleEditProfile = (userId: string) => {
+    const user = users.find(u => u.id === userId)
+    if (user) {
+      setProfileData({
+        ...profileData,
+        [userId]: {
+          username: user.username || user.name,
+          phone: user.phone || ''
+        }
+      })
+      setEditingUser(userId)
+    }
+  }
+
+  const handleSaveProfile = async (userId: string) => {
+    try {
+      const data = profileData[userId]
+      if (!data) return
+
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: userId,
+          username: data.username,
+          phone: data.phone || null,
+          updated_at: new Date().toISOString()
+        })
+
+      if (error) throw error
+
+      toast.success('Profile updated successfully!')
+      setEditingUser(null)
+      fetchUsers() // Refresh user data
+    } catch (error) {
+      console.error('Error updating profile:', error)
+      toast.error('Failed to update profile')
+    }
   }
 
   if (usersLoading || projectsLoading) {
@@ -55,7 +117,7 @@ export const TeamPage = () => {
           Team Management
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
-          View all team members and their project assignments.
+          View all team members, their profiles, and task assignments.
         </p>
       </div>
 
@@ -99,54 +161,169 @@ export const TeamPage = () => {
         <CardHeader>
           <CardTitle>Team Members</CardTitle>
           <CardDescription>
-            Current members of your team and their roles.
+            Authenticated users and their profiles with assigned tasks.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-6">
             {users.map((user) => {
-              const stats = getUserProjectStats(user.id)
+              const projectStats = getUserProjectStats(user.id)
+              const taskStats = getUserTaskStats(user.id)
+              const userTasks = tasks.filter(task => task.assigned_to === user.id)
+              const isEditing = editingUser === user.id
+              
               return (
-                <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <Avatar>
-                      <AvatarFallback>
-                        {getInitials(user.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="font-medium text-gray-900 dark:text-white">
-                        {user.name}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {user.email}
-                      </div>
-                      <div className="text-xs text-gray-400 dark:text-gray-500">
-                        Joined {format(new Date(user.joined_at), 'MMM d, yyyy')}
+                <div key={user.id} className="border rounded-lg p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center space-x-4">
+                      <Avatar className="h-12 w-12">
+                        <AvatarFallback>
+                          {getInitials(user.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        {isEditing ? (
+                          <div className="space-y-2">
+                            <div>
+                              <Label htmlFor={`username-${user.id}`}>Username</Label>
+                              <Input
+                                id={`username-${user.id}`}
+                                value={profileData[user.id]?.username || ''}
+                                onChange={(e) => setProfileData({
+                                  ...profileData,
+                                  [user.id]: {
+                                    ...profileData[user.id],
+                                    username: e.target.value
+                                  }
+                                })}
+                                className="w-full"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`phone-${user.id}`}>Phone (Optional)</Label>
+                              <Input
+                                id={`phone-${user.id}`}
+                                value={profileData[user.id]?.phone || ''}
+                                onChange={(e) => setProfileData({
+                                  ...profileData,
+                                  [user.id]: {
+                                    ...profileData[user.id],
+                                    phone: e.target.value
+                                  }
+                                })}
+                                placeholder="Enter phone number"
+                                className="w-full"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="font-medium text-gray-900 dark:text-white">
+                              {user.username || user.name}
+                            </div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              {user.email}
+                            </div>
+                            {user.phone && (
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                                Phone: {user.phone}
+                              </div>
+                            )}
+                            <div className="text-xs text-gray-400 dark:text-gray-500">
+                              Joined {format(new Date(user.joined_at), 'MMM d, yyyy')}
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      {currentUser?.id === user.id && (
+                        <>
+                          {isEditing ? (
+                            <>
+                              <Button 
+                                size="sm" 
+                                onClick={() => handleSaveProfile(user.id)}
+                              >
+                                Save
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                onClick={() => setEditingUser(null)}
+                              >
+                                Cancel
+                              </Button>
+                            </>
+                          ) : (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => handleEditProfile(user.id)}
+                            >
+                              Edit Profile
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-4 text-sm">
-                    <div className="text-center">
+
+                  {/* Project and Task Stats */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div className="text-center p-2 bg-green-50 dark:bg-green-900/20 rounded">
                       <div className="font-medium text-green-600 dark:text-green-400">
-                        {stats.activeProjects}
+                        {projectStats.activeProjects}
                       </div>
-                      <div className="text-xs text-gray-500">Active</div>
+                      <div className="text-xs text-gray-500">Active Projects</div>
                     </div>
-                    <div className="text-center">
+                    <div className="text-center p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
                       <div className="font-medium text-blue-600 dark:text-blue-400">
-                        {stats.completedProjects}
+                        {projectStats.completedProjects}
                       </div>
-                      <div className="text-xs text-gray-500">Completed</div>
+                      <div className="text-xs text-gray-500">Completed Projects</div>
+                    </div>
+                    <div className="text-center p-2 bg-orange-50 dark:bg-orange-900/20 rounded">
+                      <div className="font-medium text-orange-600 dark:text-orange-400">
+                        {taskStats.activeTasks}
+                      </div>
+                      <div className="text-xs text-gray-500">Active Tasks</div>
+                    </div>
+                    <div className="text-center p-2 bg-purple-50 dark:bg-purple-900/20 rounded">
+                      <div className="font-medium text-purple-600 dark:text-purple-400">
+                        {taskStats.completedTasks}
+                      </div>
+                      <div className="text-xs text-gray-500">Completed Tasks</div>
                     </div>
                   </div>
+
+                  {/* Assigned Tasks */}
+                  {userTasks.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                        Assigned Tasks ({userTasks.length})
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {userTasks.slice(0, 5).map((task) => (
+                          <Badge key={task.id} variant="outline" className="text-xs">
+                            {task.title} - {task.status}
+                          </Badge>
+                        ))}
+                        {userTasks.length > 5 && (
+                          <Badge variant="secondary" className="text-xs">
+                            +{userTasks.length - 5} more
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )
             })}
           </div>
         </CardContent>
       </Card>
-
     </div>
   )
 }

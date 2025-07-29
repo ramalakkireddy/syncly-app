@@ -20,6 +20,7 @@ interface TaskState {
   tasks: Task[]
   loading: boolean
   fetchTasks: (projectId: string) => Promise<void>
+  fetchAllTasks: () => Promise<void>
   createTask: (task: TaskInsert) => Promise<void>
   updateTask: (id: string, updates: TaskUpdate) => Promise<void>
   deleteTask: (id: string) => Promise<void>
@@ -44,6 +45,25 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       set({ tasks: data || [], loading: false })
     } catch (error) {
       console.error('Error fetching tasks:', error)
+      set({ loading: false })
+      throw error
+    }
+  },
+
+  fetchAllTasks: async () => {
+    set({ loading: true })
+    
+    try {
+      const { data, error } = await (supabase as any)
+        .from('tasks')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (error) throw error
+      
+      set({ tasks: data || [], loading: false })
+    } catch (error) {
+      console.error('Error fetching all tasks:', error)
       set({ loading: false })
       throw error
     }

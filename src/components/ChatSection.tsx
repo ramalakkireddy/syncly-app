@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useMessageStore } from '../stores/messageStore'
 import { useUserStore } from '../stores/userStore'
+import { useAuthStore } from '../stores/authStore'
 import { Button } from './ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
 import { Input } from './ui/input'
@@ -9,17 +10,48 @@ import { ScrollArea } from './ui/scroll-area'
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline'
 import { format } from 'date-fns'
 import { toast } from 'react-hot-toast'
+import { supabase } from '../integrations/supabase/client'
 
 interface ChatSectionProps {
   projectId: string
 }
 
 export const ChatSection = ({ projectId }: ChatSectionProps) => {
-  const { messages, loading, sendMessage } = useMessageStore()
-  const { users } = useUserStore()
+  const { messages, loading, sendMessage, fetchMessages } = useMessageStore()
+  const { users, fetchUsers } = useUserStore()
+  const { user } = useAuthStore()
   const [newMessage, setNewMessage] = useState('')
-  const [currentUserId] = useState('demo-user-id') // In real app, get from auth
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    // Fetch initial data
+    fetchMessages(projectId)
+    fetchUsers()
+  }, [projectId, fetchMessages, fetchUsers])
+
+  useEffect(() => {
+    // Set up real-time subscription for messages
+    const channel = supabase
+      .channel('messages-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `project_id=eq.${projectId}`
+        },
+        (payload) => {
+          // Refresh messages when new message is inserted
+          fetchMessages(projectId)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [projectId, fetchMessages])
 
   useEffect(() => {
     // Scroll to bottom when new messages arrive
@@ -30,14 +62,11 @@ export const ChatSection = ({ projectId }: ChatSectionProps) => {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newMessage.trim()) return
+    if (!newMessage.trim() || !user) return
 
     try {
-      // For demo purposes, use first user as sender
-      const senderId = users[0]?.id || 'demo-user-id'
-      
       await sendMessage({
-        sender_id: senderId,
+        sender_id: user.id,
         receiver_id: null, // null for project-wide messages
         project_id: projectId,
         message: newMessage.trim()
@@ -100,7 +129,7 @@ export const ChatSection = ({ projectId }: ChatSectionProps) => {
             ) : (
               <div className="space-y-4 pb-4">
                 {messages.map((message) => {
-                  const isCurrentUser = message.sender_id === currentUserId
+                  const isCurrentUser = message.sender_id === user?.id
                   const senderName = getUserName(message.sender_id)
                   
                   return (

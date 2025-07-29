@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useTaskStore } from '../stores/taskStore'
 import { useUserStore } from '../stores/userStore'
+import { useAuthStore } from '../stores/authStore'
+import { supabase } from '../integrations/supabase/client'
 import { Button } from './ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
@@ -38,8 +40,9 @@ const statusColors = {
 }
 
 export const TaskSection = ({ projectId }: TaskSectionProps) => {
-  const { tasks, loading, createTask, updateTask, deleteTask } = useTaskStore()
-  const { users } = useUserStore()
+  const { tasks, loading, createTask, updateTask, deleteTask, fetchTasks } = useTaskStore()
+  const { users, fetchUsers } = useUserStore()
+  const { user } = useAuthStore()
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [formData, setFormData] = useState({
@@ -49,6 +52,36 @@ export const TaskSection = ({ projectId }: TaskSectionProps) => {
     assigned_to: 'unassigned',
     due_date: ''
   })
+
+  useEffect(() => {
+    // Fetch initial data
+    fetchTasks(projectId)
+    fetchUsers()
+  }, [projectId, fetchTasks, fetchUsers])
+
+  useEffect(() => {
+    // Set up real-time subscription for tasks
+    const channel = supabase
+      .channel('tasks-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks',
+          filter: `project_id=eq.${projectId}`
+        },
+        () => {
+          // Refresh tasks when any task is modified
+          fetchTasks(projectId)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [projectId, fetchTasks])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

@@ -149,7 +149,7 @@ export const TaskSection = ({ projectId }: TaskSectionProps) => {
   const getUserName = (userId: string | null) => {
     if (!userId) return 'Unassigned'
     const user = users.find(u => u.id === userId)
-    return user?.name || 'Unknown User'
+    return user?.full_name || user?.name || 'Unknown User'
   }
 
   if (loading) {
@@ -227,7 +227,7 @@ export const TaskSection = ({ projectId }: TaskSectionProps) => {
                       <SelectItem value="unassigned">Unassigned</SelectItem>
                       {users.map((user) => (
                         <SelectItem key={user.id} value={user.id}>
-                          {user.name}
+                          {user.full_name || user.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -368,7 +368,7 @@ export const TaskSection = ({ projectId }: TaskSectionProps) => {
 <SelectItem value="unassigned">Unassigned</SelectItem>
                       {users.map((user) => (
                         <SelectItem key={user.id} value={user.id}>
-                          {user.name}
+                          {user.full_name || user.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

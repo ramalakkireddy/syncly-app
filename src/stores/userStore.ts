@@ -8,6 +8,7 @@ interface UserWithProfile {
   phone: string | null
   joined_at: string
   name: string // Add name property for backward compatibility
+  full_name: string
 }
 
 interface UserState {
@@ -24,32 +25,34 @@ export const useUserStore = create<UserState>((set) => ({
     set({ loading: true })
     
     try {
-      // Get all profiles
+      // First, get all profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false })
 
-      if (profilesError) throw profilesError
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError)
+        set({ users: [], loading: false })
+        return
+      }
 
-      // Get auth users data (this requires service role key in production)
-      // For now, we'll just use profiles data and get emails from auth state
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers()
+      // Get current user to ensure we have at least one user
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
       
-      if (authError) {
-        // Fallback: use current session user only
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user && profiles) {
-          const userProfile = profiles.find(p => p.id === user.id)
-          const username = userProfile?.username || user.email?.split('@')[0] || 'User'
+      if (!profiles || profiles.length === 0) {
+        // If no profiles exist, create a list with just the current user
+        if (currentUser) {
+          const username = currentUser.email?.split('@')[0] || 'User'
           set({ 
             users: [{
-              id: user.id,
-              email: user.email || '',
-              username: userProfile?.username || null,
-              phone: userProfile?.phone || null,
-              joined_at: user.created_at,
-              name: username
+              id: currentUser.id,
+              email: currentUser.email || '',
+              username: username,
+              phone: null,
+              joined_at: currentUser.created_at,
+              name: username,
+              full_name: username
             }], 
             loading: false 
           })
@@ -59,21 +62,70 @@ export const useUserStore = create<UserState>((set) => ({
         return
       }
 
-      // Combine profile and auth data
-      const combinedData: UserWithProfile[] = authUsers.users.map(user => {
-        const profile = profiles?.find(p => p.id === user.id)
-        const username = profile?.username || user.email?.split('@')[0] || 'User'
+      // Try to get all users from auth.users using a secure function
+      // If that fails, we'll use a fallback approach
+      let authUsers: any[] = []
+      try {
+        const { data: authData, error: authError } = await supabase
+          .rpc('get_user_details')
+        
+        if (!authError && authData) {
+          authUsers = authData
+        }
+      } catch (error) {
+        console.log('Could not fetch auth users, using fallback')
+      }
+
+      // Transform profiles to user objects
+      const users: UserWithProfile[] = profiles.map(profile => {
+        const username = profile.username || profile.id.split('-')[0] || 'User'
+        
+        // Try to find matching auth user for email
+        const authUser = authUsers.find(au => au.id === profile.id)
+        const email = authUser?.email || ''
+        
         return {
-          id: user.id,
-          email: user.email || '',
-          username: profile?.username || null,
-          phone: profile?.phone || null,
-          joined_at: user.created_at,
-          name: username
+          id: profile.id,
+          email: email,
+          username: profile.username,
+          phone: profile.phone,
+          joined_at: profile.created_at,
+          name: username,
+          full_name: username
         }
       })
-      
-      set({ users: combinedData, loading: false })
+
+      // If current user is not in the list, add them
+      if (currentUser && !users.find(u => u.id === currentUser.id)) {
+        const username = currentUser.email?.split('@')[0] || 'User'
+        users.unshift({
+          id: currentUser.id,
+          email: currentUser.email || '',
+          username: username,
+          phone: null,
+          joined_at: currentUser.created_at,
+          name: username,
+          full_name: username
+        })
+      }
+
+      // Update emails for users that match current user
+      if (currentUser) {
+        const currentUserInList = users.find(u => u.id === currentUser.id)
+        if (currentUserInList) {
+          currentUserInList.email = currentUser.email || ''
+        }
+      }
+
+      // If we couldn't get emails from auth, generate demo emails for missing ones
+      users.forEach((user) => {
+        if (!user.email && user.id !== currentUser?.id) {
+          const username = user.username || user.name
+          user.email = `${username.toLowerCase()}@example.com`
+        }
+      })
+
+      set({ users, loading: false })
     } catch (error) {
       console.error('Error fetching users:', error)
       set({ loading: false })

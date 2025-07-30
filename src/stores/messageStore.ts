@@ -5,7 +5,7 @@ interface Message {
   id: string
   sender_id: string
   receiver_id: string | null
-  project_id: string
+  project_id: string | null
   message: string
   created_at: string
 }
@@ -15,7 +15,7 @@ type MessageInsert = Omit<Message, 'id' | 'created_at'>
 interface MessageState {
   messages: Message[]
   loading: boolean
-  fetchMessages: (projectId: string) => Promise<void>
+  fetchMessages: (projectId?: string) => Promise<void>
   sendMessage: (message: MessageInsert) => Promise<void>
 }
 
@@ -23,15 +23,21 @@ export const useMessageStore = create<MessageState>((set, get) => ({
   messages: [],
   loading: false,
 
-  fetchMessages: async (projectId: string) => {
+  fetchMessages: async (projectId?: string) => {
     set({ loading: true })
     
     try {
-      const { data, error } = await (supabase as any)
+      let query = supabase
         .from('messages')
         .select('*')
-        .eq('project_id', projectId)
         .order('created_at', { ascending: true })
+      
+      // If projectId is provided, filter by project, otherwise get all messages (global chat)
+      if (projectId) {
+        query = query.eq('project_id', projectId)
+      }
+      
+      const { data, error } = await query
       
       if (error) throw error
       

@@ -13,10 +13,11 @@ import { toast } from 'react-hot-toast'
 import { supabase } from '../integrations/supabase/client'
 
 interface ChatSectionProps {
-  projectId: string
+  projectId?: string
+  isGlobal?: boolean
 }
 
-export const ChatSection = ({ projectId }: ChatSectionProps) => {
+export const ChatSection = ({ projectId, isGlobal = false }: ChatSectionProps) => {
   const { messages, loading, sendMessage, fetchMessages } = useMessageStore()
   const { users, fetchUsers } = useUserStore()
   const { user } = useAuthStore()
@@ -25,9 +26,13 @@ export const ChatSection = ({ projectId }: ChatSectionProps) => {
 
   useEffect(() => {
     // Fetch initial data
-    fetchMessages(projectId)
+    if (isGlobal) {
+      fetchMessages() // Fetch all messages for global chat
+    } else {
+      fetchMessages(projectId)
+    }
     fetchUsers()
-  }, [projectId, fetchMessages, fetchUsers])
+  }, [projectId, isGlobal, fetchMessages, fetchUsers])
 
   useEffect(() => {
     // Set up real-time subscription for messages
@@ -39,11 +44,15 @@ export const ChatSection = ({ projectId }: ChatSectionProps) => {
           event: 'INSERT',
           schema: 'public',
           table: 'messages',
-          filter: `project_id=eq.${projectId}`
+          ...(isGlobal ? {} : { filter: `project_id=eq.${projectId}` })
         },
         (payload) => {
           // Refresh messages when new message is inserted
-          fetchMessages(projectId)
+          if (isGlobal) {
+            fetchMessages() // Refresh all messages for global chat
+          } else {
+            fetchMessages(projectId)
+          }
         }
       )
       .subscribe()
@@ -51,7 +60,7 @@ export const ChatSection = ({ projectId }: ChatSectionProps) => {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [projectId, fetchMessages])
+  }, [projectId, isGlobal, fetchMessages])
 
   useEffect(() => {
     // Scroll to bottom when new messages arrive
@@ -68,7 +77,7 @@ export const ChatSection = ({ projectId }: ChatSectionProps) => {
       await sendMessage({
         sender_id: user.id,
         receiver_id: null, // null for project-wide messages
-        project_id: projectId,
+        project_id: isGlobal ? null : projectId, // null for global chat
         message: newMessage.trim()
       })
       
@@ -81,7 +90,7 @@ export const ChatSection = ({ projectId }: ChatSectionProps) => {
 
   const getUserName = (userId: string) => {
     const user = users.find(u => u.id === userId)
-    return user?.name || 'Unknown User'
+    return user?.full_name || user?.name || 'Unknown User'
   }
 
   const getInitials = (name: string) => {
@@ -102,89 +111,103 @@ export const ChatSection = ({ projectId }: ChatSectionProps) => {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold mb-2">Project Chat</h2>
-        <p className="text-gray-600 dark:text-gray-400">
-          Chat with your team members about this project.
-        </p>
+    <div className="h-full flex flex-col">
+      {/* Chat Header */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              {isGlobal ? 'Global Chat' : 'Project Chat'}
+            </h2>
+          </div>
+        </div>
       </div>
 
-      <Card className="h-96 flex flex-col">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Team Discussion</CardTitle>
-          <CardDescription>
-            {messages.length} {messages.length === 1 ? 'message' : 'messages'}
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent className="flex-1 flex flex-col p-0">
-          <ScrollArea className="flex-1 px-6" ref={scrollAreaRef}>
-            {messages.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500 dark:text-gray-400">
-                  No messages yet. Start the conversation!
-                </p>
+      {/* Messages Area */}
+      <div className="flex-1 bg-gray-50 dark:bg-gray-900 overflow-hidden">
+        <ScrollArea className="h-full px-4 py-4" ref={scrollAreaRef}>
+          {messages.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                </div>
+                <p className="text-gray-500 dark:text-gray-400 font-medium">No messages yet</p>
+                <p className="text-gray-400 dark:text-gray-500 text-sm">Start the conversation!</p>
               </div>
-            ) : (
-              <div className="space-y-4 pb-4">
-                {messages.map((message) => {
-                  const isCurrentUser = message.sender_id === user?.id
-                  const senderName = getUserName(message.sender_id)
-                  
-                  return (
-                    <div
-                      key={message.id}
-                      className={`flex gap-3 ${isCurrentUser ? 'flex-row-reverse' : ''}`}
-                    >
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="text-xs">
-                          {getInitials(senderName)}
-                        </AvatarFallback>
-                      </Avatar>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {messages.map((message) => {
+                const isCurrentUser = message.sender_id === user?.id
+                const senderName = getUserName(message.sender_id)
+                
+                return (
+                  <div
+                    key={message.id}
+                    className={`flex gap-3 ${isCurrentUser ? 'flex-row-reverse' : ''}`}
+                  >
+                    {/* Avatar */}
+                    <Avatar className="h-8 w-8 flex-shrink-0">
+                      <AvatarFallback className={`text-xs ${isCurrentUser ? 'bg-green-500 text-white' : 'bg-blue-500 text-white'}`}>
+                        {getInitials(senderName)}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    {/* Message Content */}
+                    <div className={`flex-1 max-w-[70%] ${isCurrentUser ? 'text-right' : 'text-left'}`}>
+                      {/* Sender Name */}
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                        {senderName}
+                      </div>
                       
-                      <div className={`flex-1 ${isCurrentUser ? 'text-right' : ''}`}>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-medium">
-                            {senderName}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {format(new Date(message.created_at), 'MMM d, h:mm a')}
-                          </span>
-                        </div>
-                        
-                        <div
-                          className={`inline-block max-w-xs lg:max-w-md px-3 py-2 rounded-lg text-sm ${
-                            isCurrentUser
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted'
-                          }`}
-                        >
-                          {message.message}
-                        </div>
+                      {/* Message Bubble */}
+                      <div
+                        className={`inline-block px-4 py-2 rounded-2xl text-sm ${
+                          isCurrentUser
+                            ? 'bg-blue-500 text-white rounded-br-md'
+                            : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-bl-md'
+                        }`}
+                      >
+                        {message.message}
+                      </div>
+                      
+                      {/* Timestamp */}
+                      <div className="text-xs text-gray-400 mt-1">
+                        {format(new Date(message.created_at), 'h:mm a')}
                       </div>
                     </div>
-                  )
-                })}
-              </div>
-            )}
-          </ScrollArea>
-          
-          <div className="border-t p-4">
-            <form onSubmit={handleSendMessage} className="flex gap-2">
-              <Input
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type your message..."
-                className="flex-1"
-              />
-              <Button type="submit" size="sm" disabled={!newMessage.trim()}>
-                <PaperAirplaneIcon className="h-4 w-4" />
-              </Button>
-            </form>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </ScrollArea>
+      </div>
+
+      {/* Message Input */}
+      <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
+        <form onSubmit={handleSendMessage} className="flex gap-3">
+          <div className="flex-1 relative">
+            <Input
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="Type a message..."
+              className="pr-12 rounded-full border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
           </div>
-        </CardContent>
-      </Card>
+          <Button 
+            type="submit" 
+            size="sm" 
+            disabled={!newMessage.trim()}
+            className="rounded-full w-10 h-10 p-0 bg-blue-500 hover:bg-blue-600"
+          >
+            <PaperAirplaneIcon className="h-4 w-4" />
+          </Button>
+        </form>
+      </div>
     </div>
   )
 }

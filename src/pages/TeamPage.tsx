@@ -178,7 +178,7 @@ export const TeamPage = () => {
                     <div className="flex items-center space-x-4">
                       <Avatar className="h-12 w-12">
                         <AvatarFallback>
-                          {getInitials(user.name)}
+                          {getInitials(user.full_name || user.name)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
@@ -219,10 +219,7 @@ export const TeamPage = () => {
                         ) : (
                           <>
                             <div className="font-medium text-gray-900 dark:text-white">
-                              {user.username || user.name}
-                            </div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
-                              {user.email}
+                              {user.full_name || user.username || user.name}
                             </div>
                             {user.phone && (
                               <div className="text-sm text-gray-500 dark:text-gray-400">

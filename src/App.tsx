@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
+import { UpdatePasswordPage } from './pages/UpdatePasswordPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { NewProjectPage } from './pages/NewProjectPage'
 import { ProjectDetailPage } from './pages/ProjectDetailPage'
@@ -14,20 +16,23 @@ import NotFound from './pages/NotFound'
 const App = () => {
   return (
     <BrowserRouter>
-      <Layout>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/projects" element={<ProjectsPage />} />
-          <Route path="/projects/new" element={<NewProjectPage />} />
-          <Route path="/project/:id" element={<ProjectDetailPage />} />
-          <Route path="/team" element={<TeamPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Layout>
+      <Routes>
+        {/* Auth pages without layout */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/update-password" element={<UpdatePasswordPage />} />
+        
+        {/* Protected pages with layout */}
+        <Route path="/dashboard" element={<Layout><DashboardPage /></Layout>} />
+        <Route path="/projects" element={<Layout><ProjectsPage /></Layout>} />
+        <Route path="/projects/new" element={<Layout><NewProjectPage /></Layout>} />
+        <Route path="/project/:id" element={<Layout><ProjectDetailPage /></Layout>} />
+        <Route path="/team" element={<Layout><TeamPage /></Layout>} />
+        <Route path="/settings" element={<Layout><SettingsPage /></Layout>} />
+        <Route path="/" element={<Layout><DashboardPage /></Layout>} />
+        <Route path="*" element={<Layout><NotFound /></Layout>} />
+      </Routes>
     </BrowserRouter>
   )
 }

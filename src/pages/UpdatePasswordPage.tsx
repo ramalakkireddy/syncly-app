@@ -1,29 +1,26 @@
-
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuthStore } from '../stores/authStore'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
+import { supabase } from '../integrations/supabase/client'
 import toast from 'react-hot-toast'
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 
-export const RegisterPage = () => {
-  const [email, setEmail] = useState('')
+export const UpdatePasswordPage = () => {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const { signUp } = useAuthStore()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     
-    if (!email || !password || !confirmPassword) {
+    if (!password || !confirmPassword) {
       setError('Please fill in all fields')
       return
     }
@@ -34,18 +31,23 @@ export const RegisterPage = () => {
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters')
+      setError('Password must be at least 6 characters long')
       return
     }
 
     setLoading(true)
     
     try {
-      await signUp(email, password)
-      toast.success('Check your email to confirm your account!')
+      const { error } = await supabase.auth.updateUser({
+        password: password
+      })
+
+      if (error) throw error
+
+      toast.success('Password updated successfully!')
       navigate('/login')
     } catch (error: any) {
-      setError(error.message || 'Failed to create account')
+      setError(error.message || 'Failed to update password')
     } finally {
       setLoading(false)
     }
@@ -68,37 +70,20 @@ export const RegisterPage = () => {
               <span className="text-white font-bold text-2xl">PS</span>
             </div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-              Join ProjectSync 🚀
+              🔑 Update Password
             </h1>
             <p className="text-gray-600 dark:text-gray-300 text-lg">
-              Create your workspace and start tracking tasks
+              Enter your new password below
             </p>
           </div>
 
           {/* Glassmorphism Card */}
           <div className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/30 p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Email Input */}
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-gray-700 dark:text-gray-300 font-medium">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/50 dark:bg-gray-700/50 border border-gray-200/50 dark:border-gray-600/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                  placeholder="Enter your email"
-                />
-              </div>
-
-              {/* Password Input */}
+              {/* New Password Input */}
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-gray-700 dark:text-gray-300 font-medium">
-                  Password
+                  New Password
                 </Label>
                 <div className="relative">
                   <Input
@@ -109,7 +94,7 @@ export const RegisterPage = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full px-4 py-3 pr-12 bg-white/50 dark:bg-gray-700/50 border border-gray-200/50 dark:border-gray-600/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    placeholder="Create a password"
+                    placeholder="Enter new password"
                   />
                   <button
                     type="button"
@@ -128,7 +113,7 @@ export const RegisterPage = () => {
               {/* Confirm Password Input */}
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword" className="text-gray-700 dark:text-gray-300 font-medium">
-                  Confirm Password
+                  Confirm New Password
                 </Label>
                 <div className="relative">
                   <Input
@@ -139,7 +124,7 @@ export const RegisterPage = () => {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="w-full px-4 py-3 pr-12 bg-white/50 dark:bg-gray-700/50 border border-gray-200/50 dark:border-gray-600/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    placeholder="Confirm your password"
+                    placeholder="Confirm new password"
                   />
                   <button
                     type="button"
@@ -171,18 +156,18 @@ export const RegisterPage = () => {
                 {loading ? (
                   <div className="flex items-center justify-center">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Creating account...
+                    Updating...
                   </div>
                 ) : (
-                  'Create account'
+                  'Update Password'
                 )}
               </Button>
             </form>
 
-            {/* Sign In Link */}
+            {/* Back to Sign In Link */}
             <div className="mt-6 text-center">
               <p className="text-gray-600 dark:text-gray-400">
-                📎 Already have an account?{' '}
+                📎 Remember your password?{' '}
                 <Link
                   to="/login"
                   className="font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
@@ -196,4 +181,4 @@ export const RegisterPage = () => {
       </div>
     </div>
   )
-}
+} 

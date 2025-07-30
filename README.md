@@ -1,6 +1,8 @@
 
 # ProjectSync - Modern Project Management SaaS
 
+URL: https://project-sync-app-xi.vercel.app/
+
 A production-ready, full-stack project management and collaboration tool built with React, TypeScript, Tailwind CSS, and Supabase.
 
 ## 🚀 Features
@@ -64,56 +66,3 @@ A production-ready, full-stack project management and collaboration tool built w
 - Row Level Security (RLS) policies
 - User-based data access control
 - Secure API endpoints
-
-## 🚀 Getting Started
-
-1. **Clone the repository**
-```bash
-git clone <your-repo-url>
-cd projectsync
-```
-
-2. **Install dependencies**
-```bash
-npm install
-```
-
-3. **Set up environment variables**
-Create a `.env.local` file:
-```
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
-
-4. **Run the development server**
-```bash
-npm run dev
-```
-
-5. **Set up Supabase**
-   - Create a new Supabase project
-   - Run the SQL migrations for tables
-   - Configure RLS policies
-   - Enable real-time subscriptions
-
-## 📦 Deployment
-
-The app is ready for deployment on Vercel:
-
-```bash
-npm run build
-```
-
-Deploy to Vercel with automatic builds from your Git repository.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## 📝 License
-
-This project is licensed under the MIT License.
